@@ -9,47 +9,100 @@ using namespace std;
 
 //cv::Ptr<cv::bioinspired::Retina> cvRetina; // Модуль сетчатки глаза
 
-//Definition of prototypes
-void imgProcessing(double& thresholdMaxValue);
+class Spear {
+private:
+	double thresholdMaxValue;
+	double thresholdC;
+	int thresholdBlockSize;
+
+
+	Mat frame;
+	VideoCapture cap;
+	pair<int, double> property;
+public:
+	Spear() {
+		thresholdMaxValue = 256;
+		thresholdC = 5;
+		thresholdBlockSize = 9;
+		cap.open(0);
+		if (!cap.isOpened()) {
+			throw new exception("ERROR! Unable to open camera\n");
+		}
+	}
+
+	void setThresholdMaxValue(double argThresholdMaxValue) {
+		thresholdMaxValue = argThresholdMaxValue;
+	}
+
+	void imgProcessing() {
+		while (true)
+		{
+			try {
+				// wait for a new frame from camera and store it into 'frame'
+				cap.read(frame);
+				// check if we succeeded
+				if (frame.empty()) {
+					cerr << "ERROR! blank frame grabbed\n";
+					break;
+				}
+
+				cvtColor(frame, frame, CV_RGB2GRAY);
+
+
+				adaptiveThreshold(frame, frame, thresholdMaxValue, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
+					thresholdBlockSize, thresholdC);
+				// show live and wait for a key with timeout long enough to show images
+				imshow("Live", frame);
+				waitKey(50);
+			}
+			catch (exception ex) {
+				cout << ex.what() << endl;
+			}
+		}
+	}
+
+	void runPropertiesManagement() {
+		while (true)
+		{
+			readOptionAndValue();
+			if (property.first == 0) {
+				return;
+			}
+			changePropertyValue();
+		}
+	}
+
+	~Spear() {
+		frame.~Mat();
+		cap.~VideoCapture();
+	}
+
+private:
+	void readOptionAndValue() {
+		cout << "Enter a number of the property: " << endl;
+		cin >> property.first;
+		cout << "Enter a new value of the property: " << endl;
+		cin >> property.second;
+	}
+
+	void changePropertyValue() {
+		if (property.first == 1) {
+			thresholdMaxValue = property.second;
+		} else if (property.first == 2) {
+			thresholdBlockSize = property.second;
+		}
+		else if (property.first == 3) {
+			thresholdC = property.second;
+		}
+	}
+};
 
 int main()
 {
-	double thresholdMaxValue = 20;
-	thread t = thread(imgProcessing, std::ref(thresholdMaxValue));
-	while (true)
-	{
-		cin >> thresholdMaxValue;
-	}
+	Spear* sp = new Spear();
+
+	thread processingThread = thread(&Spear::imgProcessing, sp);
+	sp->runPropertiesManagement();
 
 	return 0;
-}
-
-void imgProcessing(double& thresholdMaxValue) {
-	Mat frame;
-	//--- INITIALIZE VIDEOCAPTURE
-	VideoCapture cap;
-	// open the default camera using default API
-	cap.open(0);
-	// check if we succeeded
-	if (!cap.isOpened()) {
-		cerr << "ERROR! Unable to open camera\n";
-		return;
-	}
-	while (true)
-	{
-		// wait for a new frame from camera and store it into 'frame'
-		cap.read(frame);
-		// check if we succeeded
-		if (frame.empty()) {
-			cerr << "ERROR! blank frame grabbed\n";
-			break;
-		}
-
-		cvtColor(frame, frame, CV_RGB2GRAY);
-		adaptiveThreshold(frame, frame, thresholdMaxValue, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 3, 5);
-		// show live and wait for a key with timeout long enough to show images
-		imshow("Live", frame);
-		waitKey(50);
-	}
-	// the camera will be deinitialized automatically in VideoCapture destructor
 }
