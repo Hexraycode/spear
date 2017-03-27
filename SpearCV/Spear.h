@@ -19,6 +19,9 @@ private:
 
 	VideoCapture cap;
 	pair<int, double> property;
+
+	vector<vector<Point>> contours;
+	vector<Vec4i> hierarchy;
 public:
 	Spear() {
 		thresholdMaxValue = 255;
@@ -43,15 +46,28 @@ public:
 				waitKey(10);
 				cap.read(frame2);
 				//To grayscale
-				cvtColor(frame1, frame1, CV_RGB2GRAY);
-				cvtColor(frame2, frame2, CV_RGB2GRAY);
+				cvtColor(frame1, frame1, CV_BGR2GRAY);
+				cvtColor(frame2, frame2, CV_BGR2GRAY);
 				//Difference
 				absdiff(frame1, frame2, frameResult);
 				//Threshold
 				adaptiveThreshold(frameResult, frameResult, thresholdMaxValue, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
 					thresholdBlockSize, thresholdC);
 				//blur(frameResult, frameResult, Size(5, 5));
-				medianBlur(frameResult, frameResult, 3);
+				//medianBlur(frameResult, frameResult, 3);
+
+				Canny(frame1, frameResult, 100, 200, 3);
+
+				//RNG rng(12345);
+				//findContours(frameResult, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+
+				//Mat drawing = Mat::zeros(frameResult.size(), CV_8UC3);
+				//for (int i = 0; i< contours.size(); i++)
+				//{
+				//	Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+				//	drawContours(drawing, contours, i, color, 1, 8, hierarchy, 0, Point());
+				//}
+
 
 				//adaptiveThreshold(frameResult, frameResult, thresholdMaxValue, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
 				//	thresholdBlockSize, thresholdC);
@@ -59,6 +75,7 @@ public:
 				// show live and wait for a key with timeout long enough to show images
 				imshow("Original", frame1);
 				imshow("Processed", frameResult);
+				//imshow("Contours", drawing);
 				waitKey(50);
 			}
 			catch (exception ex) {
