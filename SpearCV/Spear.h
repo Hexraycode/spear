@@ -14,14 +14,16 @@ private:
 	int thresholdBlockSize;
 
 	Mat frame1;
+	Mat frame1Color;
 	Mat frame2;
 	Mat frameResult;
+	Mat frameDifference;
 
 	VideoCapture cap;
 	pair<int, double> property;
 
-	vector<vector<Point>> contours;
-	vector<Vec4i> hierarchy;
+	//vector<vector<Point>> contours;
+	//vector<Vec4i> hierarchy;
 public:
 	Spear() {
 		thresholdMaxValue = 255;
@@ -41,49 +43,56 @@ public:
 		while (true)
 		{
 			try {
-				// wait for a new frame from camera and store it into 'frame'
-				cap.read(frame1);
-				waitKey(10);
+				cap.read(frame1Color);
+				waitKey(40);
 				cap.read(frame2);
 				//To grayscale
-				cvtColor(frame1, frame1, CV_BGR2GRAY);
+				cvtColor(frame1Color, frame1, CV_BGR2GRAY);
 				cvtColor(frame2, frame2, CV_BGR2GRAY);
 				//Difference
-				absdiff(frame1, frame2, frameResult);
+				absdiff(frame1, frame2, frameDifference);
 				//Threshold
-				adaptiveThreshold(frameResult, frameResult, thresholdMaxValue, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
-					thresholdBlockSize, thresholdC);
-				//blur(frameResult, frameResult, Size(5, 5));
-				//medianBlur(frameResult, frameResult, 3);
+				/*adaptiveThreshold(frameDifference, frameResult, thresholdMaxValue, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
+					thresholdBlockSize, thresholdC);*/
+				threshold(frameDifference, frameResult, 10, thresholdMaxValue, CV_THRESH_BINARY);
+				erode(frameResult, frameResult, Mat(), Point(-1, -1), 1);
+				medianBlur(frameResult, frameResult, 3);
+				//Extract contours
+				vector<vector<Point>> contours;
+				vector<Vec4i> hierarchy;
+				findContours(frameResult, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
-				Canny(frame1, frameResult, 100, 200, 3);
+				cvtColor(frame1, frame1, CV_GRAY2BGR);
+				drawContours(frame1Color, contours, -1, Scalar(0,0,255), 1);
 
-				//RNG rng(12345);
-				//findContours(frameResult, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
-
-				//Mat drawing = Mat::zeros(frameResult.size(), CV_8UC3);
-				//for (int i = 0; i< contours.size(); i++)
-				//{
-				//	Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-				//	drawContours(drawing, contours, i, color, 1, 8, hierarchy, 0, Point());
-				//}
-
-
-				//adaptiveThreshold(frameResult, frameResult, thresholdMaxValue, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
-				//	thresholdBlockSize, thresholdC);
-
-				// show live and wait for a key with timeout long enough to show images
-				imshow("Original", frame1);
+				//Canny(frameResult, frameResult, 100, 200, 3);
+				//Showing images
+				imshow("Original", frame1Color);
+				imshow("Difference", frameDifference);
 				imshow("Processed", frameResult);
-				//imshow("Contours", drawing);
-				waitKey(50);
 			}
 			catch (exception ex) {
 				cout << ex.what() << endl;
 			}
 		}
 	}
-
+	//vector<Moments> contour_moments(contours.size());
+	//vector<Point> mass_centers(contours.size());
+	//get centroid of contours
+	//for (int i = 0; i < contours.size(); i++) {
+	//	contour_moments[i] = moments(contours[i], false);
+	//	mass_centers[i] = Point(contour_moments[i].m10 / contour_moments[i].m00, contour_moments[i].m01 / contour_moments[i].m00);
+	//}
+	//
+	//bool objectsDetected = (contours.size() > 0);
+	//if (objectsDetected) {
+	//	double xPos = 0;
+	//	double yPos = 0;
+	//	for (int i = 0; i < contours.size(); i++) {
+	//		xPos += mass_centers[i].x;
+	//		yPos += mass_centers[i].y;
+	//	}
+	//}
 	void runPropertiesManagement() {
 		while (true)
 		{
