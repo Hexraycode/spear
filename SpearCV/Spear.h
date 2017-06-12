@@ -60,10 +60,22 @@ public:
 				//Extract contours
 				vector<vector<Point>> contours;
 				vector<Vec4i> hierarchy;
-				findContours(frameResult, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+				findContours(frameResult, contours/*, hierarchy*/, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
-				cvtColor(frame1, frame1, CV_GRAY2BGR);
-				drawContours(frame1Color, contours, -1, Scalar(0,0,255), 1);
+				//drawContours(frame1Color, contours, -1, Scalar(0,0,255), 1);
+
+				std::vector<cv::Point> points;
+				for (size_t i = 0; i<contours.size(); i++) {
+					for (size_t j = 0; j < contours[i].size(); j++) {
+						cv::Point p = contours[i][j];
+						points.push_back(p);
+					}
+				}
+				if (points.size() > 0) {
+					cv::Rect brect = cv::boundingRect(cv::Mat(points).reshape(2));
+					cv::rectangle(frame1Color, brect.tl(), brect.br(), cv::Scalar(100, 100, 200), 2, CV_AA);
+				}
+
 
 				//Canny(frameResult, frameResult, 100, 200, 3);
 				//Showing images
